@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+    <property>
+        <!-- 文件副本数量, 默认是3 -->
+        <name>dfs.replication</name>
+        <value>3</value>
+<!--        <value>1</value>-->
+    </property>
+    <property>
+        <!-- 是否启用文件操作权限, 不启用可以以普通账户写操作HDFS文件和目录 -->
+        <name>dfs.permissions</name>
+        <value>false</value>
+    </property>
+    <property>
+        <!-- NameNode存储数据的文件所在的路径 -->
+        <name>dfs.namenode.name.dir</name>
+        <value>/app/hdfs/namenode</value>
+    </property>
+    <property>
+        <!--  DataNode存储数据的文件路径 -->
+        <name>dfs.datanode.data.dir</name>
+        <value>/app/hdfs/datanode</value>
+    </property>
+    <property>
+        <!--  设置SecondNameNode节点地址 -->
+        <name>dfs.namenode.secondary.http-address</name>
+        <value>master2:50090</value>
+    </property>
+</configuration>

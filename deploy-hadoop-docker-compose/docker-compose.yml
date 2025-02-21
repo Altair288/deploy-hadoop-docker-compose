@@ -1,0 +1,71 @@
+services:
+  master1:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: hadoop330
+    ports:
+      - "9000:9000"
+      - "9870:9870"
+      - "8088:8088"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+  master2:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+  worker1:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+  worker2:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+  worker3:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
