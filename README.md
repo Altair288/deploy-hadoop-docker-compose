@@ -1,2 +1,3 @@
 # deploy-hadoop-docker-compose
-For docker-compose to deploy hadoop-3.4.1
+Hadoop Deployment Based on Docker Ubuntu 20.04 Image
+Docker Configured Fully Distributed Hadoop (5 Containers: Two Master Nodes, Three Slave Nodes)
