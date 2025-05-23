@@ -1,0 +1,170 @@
+# syntax=docker/dockerfile:1
+
+# 参考资料: https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html
+
+FROM docker.altair288.eu.org/library/ubuntu:20.04
+
+ARG TARBALL=hadoop-3.4.1.tar.gz
+# 提前下载好的java8压缩包, 下载地址: https://www.oracle.com/java/technologies/downloads/
+ARG JAVA_TARBALL=jdk-8u212-linux-x64.tar.gz
+
+ENV HADOOP_HOME /app/hadoop
+ENV JAVA_HOME /usr/java
+
+WORKDIR $JAVA_HOME
+WORKDIR $HADOOP_HOME
+
+RUN sed -i s@/archive.ubuntu.com/@/mirrors.aliyun.com/@g /etc/apt/sources.list && \
+    apt-get clean && \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    wget \
+    ssh
+
+# 拷贝jdk8安装包
+COPY ${JAVA_TARBALL} ${JAVA_HOME}/${JAVA_TARBALL}
+
+RUN tar -zxvf /usr/java/${JAVA_TARBALL} --strip-components 1 -C /usr/java && \
+    rm /usr/java/${JAVA_TARBALL} && \
+    # 设置java8环境变量
+    echo export JAVA_HOME=${JAVA_HOME} >> ~/.bashrc && \
+    echo export PATH=\$PATH:\$JAVA_HOME/bin >> ~/.bashrc && \
+    echo export JAVA_HOME=${JAVA_HOME} >> /etc/profile && \
+    echo export PATH=\$PATH:\$JAVA_HOME/bin >> /etc/profile && \
+    # 下载hadoop安装包
+    wget --no-check-certificate https://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/stable/${TARBALL} && \
+    # 解压hadoop安装包
+    tar -zxvf ${TARBALL} --strip-components 1 -C $HADOOP_HOME && \
+    rm ${TARBALL} && \
+    # 设置从节点
+    echo "worker1\nworker2\nworker3" > $HADOOP_HOME/etc/hadoop/workers && \
+    echo export HADOOP_HOME=${HADOOP_HOME} >> ~/.bashrc && \
+	echo export PATH=\$PATH:\$HADOOP_HOME/bin >> ~/.bashrc && \
+	echo export PATH=\$PATH:\$HADOOP_HOME/sbin >> ~/.bashrc && \
+	echo export HADOOP_HOME=${HADOOP_HOME} >> /etc/profile && \
+	echo export PATH=\$PATH:\$HADOOP_HOME/bin >> /etc/profile && \
+	echo export PATH=\$PATH:\$HADOOP_HOME/sbin >> /etc/profile && \
+    mkdir /app/hdfs && \
+    # java8软连接
+    ln -s $JAVA_HOME/bin/java /bin/java
+
+# 拷贝hadoop配置文件
+COPY hadoop/hdfs-site.xml $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+COPY hadoop/core-site.xml $HADOOP_HOME/etc/hadoop/core-site.xml
+COPY hadoop/mapred-site.xml $HADOOP_HOME/etc/hadoop/mapred-site.xml
+COPY hadoop/yarn-site.xml $HADOOP_HOME/etc/hadoop/yarn-site.xml
+
+# 设置hadoop环境变量
+RUN echo export JAVA_HOME=$JAVA_HOME >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export HADOOP_MAPRED_HOME=$HADOOP_HOME >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export HDFS_NAMENODE_USER=root >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export HDFS_DATANODE_USER=root >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export HDFS_SECONDARYNAMENODE_USER=root >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export YARN_RESOURCEMANAGER_USER=root >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh && \
+    echo export YARN_NODEMANAGER_USER=root >> $HADOOP_HOME/etc/hadoop/hadoop-env.sh
+
+# 下载并解压 Hive
+RUN wget https://dlcdn.apache.org/hive/hive-4.0.1/apache-hive-4.0.1-bin.tar.gz --no-check-certificate -P /usr/local/ && \
+    tar -zxvf /usr/local/apache-hive-4.0.1-bin.tar.gz -C /usr/local/ && \
+    rm /usr/local/apache-hive-4.0.1-bin.tar.gz
+
+# 配置 Hive 环境变量
+ENV HIVE_HOME=/usr/local/apache-hive-4.0.1-bin
+ENV PATH=$PATH:$HIVE_HOME/bin
+ENV PATH=$PATH:$HIVE_HOME/bin
+
+# 拷贝 Hive 配置文件（后续可用 COPY 指令替换）
+COPY hadoop/hive-site.xml /usr/local/apache-hive-4.0.1-bin/conf/hive-site.xml
+
+# 下载 MySQL JDBC 驱动
+RUN wget https://downloads.mysql.com/archives/get/p/3/file/mysql-connector-java-8.0.22.tar.gz --no-check-certificate -P /tmp && \
+    tar -zxvf /tmp/mysql-connector-java-8.0.22.tar.gz -C /tmp && \
+    cp /tmp/mysql-connector-java-8.0.22/mysql-connector-java-8.0.22.jar $HIVE_HOME/lib/ && \
+    rm -rf /tmp/mysql-connector-java-8.0.22*
+
+# 处理 guava 和 slf4j 冲突
+RUN cp /app/hadoop/share/hadoop/common/lib/guava-27.0-jre.jar $HIVE_HOME/lib/
+
+# 拷贝zookeeper安装包（假设你已提前下载到构建目录）
+COPY apache-zookeeper-3.9.3-bin.tar.gz /usr/
+
+# 解压并重命名
+RUN tar -zxvf /usr/apache-zookeeper-3.9.3-bin.tar.gz -C /usr && \
+    mv /usr/apache-zookeeper-3.9.3-bin /usr/zookeeper && \
+    rm /usr/apache-zookeeper-3.9.3-bin.tar.gz && \
+    mkdir -p /usr/zookeeper/zkdata /usr/zookeeper/zkdatalog && \
+    chmod 777 /usr/zookeeper/zkdata /usr/zookeeper/zkdatalog && \
+    mv /usr/zookeeper/conf/zoo_sample.cfg /usr/zookeeper/conf/zoo.cfg && \
+    echo "dataDir=/usr/zookeeper/zkdata" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "dataLogDir=/usr/zookeeper/zkdatalog" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "server.1=172.19.0.2:2888:3888" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "server.2=172.19.0.3:2888:3888" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "server.3=172.19.0.4:2888:3888" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "server.4=172.19.0.6:2888:3888" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "server.5=172.19.0.7:2888:3888" >> /usr/zookeeper/conf/zoo.cfg && \
+    echo "1" > /usr/zookeeper/zkdata/myid
+
+# 设置zookeeper环境变量
+ENV ZOOKEEPER_HOME=/usr/zookeeper
+ENV PATH=$PATH:$ZOOKEEPER_HOME/bin
+
+# 拷贝HBase安装包
+COPY hbase-2.6.2-bin.tar.gz /usr/local/
+
+RUN tar -zxvf /usr/local/hbase-2.6.2-bin.tar.gz -C /usr/local/ && \
+    mv /usr/local/hbase-2.6.2 /usr/local/hbase && \
+    rm /usr/local/hbase-2.6.2-bin.tar.gz && \
+    echo "export HBASE_HOME=/usr/local/hbase" >> /etc/profile && \
+    echo "export PATH=\$HBASE_HOME/bin:\$PATH" >> /etc/profile && \
+    echo "export HBASE_HOME=/usr/local/hbase" >> ~/.bashrc && \
+    echo "export PATH=\$HBASE_HOME/bin:\$PATH" >> ~/.bashrc
+
+ENV HBASE_HOME=/usr/local/hbase
+ENV PATH=$PATH:$HBASE_HOME/bin
+
+# 拷贝Hadoop配置到HBase
+RUN cp $HADOOP_HOME/etc/hadoop/core-site.xml $HBASE_HOME/conf/core-site.xml && \
+    cp $HADOOP_HOME/etc/hadoop/hdfs-site.xml $HBASE_HOME/conf/hdfs-site.xml
+
+# 拷贝hbase-site.xml到HBase配置目录
+COPY hadoop/hbase-site.xml $HBASE_HOME/conf/hbase-site.xml
+
+# 配置hbase-env.sh
+RUN echo "export HBASE_MANAGES_ZK=false" >> $HBASE_HOME/conf/hbase-env.sh && \
+    echo "export JAVA_HOME=/usr/java" >> $HBASE_HOME/conf/hbase-env.sh
+
+# 移除冲突jar包
+RUN mv $HBASE_HOME/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar $HBASE_HOME/lib/client-facing-thirdparty/slf4j-log4j12-1.7.25.jar.bak || true
+
+# ssh免登录设置
+RUN echo "/etc/init.d/ssh start" >> ~/.bashrc && \
+    ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa && \
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys && \
+    chmod 0600 ~/.ssh/authorized_keys
+
+EXPOSE 2181 
+EXPOSE 2888 
+EXPOSE 3888
+EXPOSE 8088
+EXPOSE 8030
+EXPOSE 8031
+# NameNode WEB UI服务端口
+EXPOSE 9870
+# nn文件服务端口
+EXPOSE 9000
+# dfs.namenode.secondary.http-address
+EXPOSE 9868
+# dfs.datanode.http.address
+EXPOSE 9864
+# dfs.datanode.address
+EXPOSE 9866
+EXPOSE 10000
+EXPOSE 10002
+EXPOSE 10001 16000 16020 16010 16030 2181 
+
+# 启动脚本
+COPY start-all.sh /start-all.sh
+RUN chmod +x /start-all.sh
+
+ENTRYPOINT ["/start-all.sh"]

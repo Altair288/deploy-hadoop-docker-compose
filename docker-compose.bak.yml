@@ -1,0 +1,122 @@
+services:
+  master1:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: hadoop330
+    ports:
+      - "9100:9100"
+      - "9870:9870"
+      - "8088:8088"
+      - "8030:8030"
+      - "8031:8031"
+      - "8032:8032"
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+      - "10020:10020"
+      - "19888:19888"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.2
+
+  master2:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: master2
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.3
+
+  worker1:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker1
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.4
+
+  worker2:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker2
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.6
+
+  worker3:
+    image: hadoop
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.7
+
+  mysql_hive:
+    image: docker.altair288.eu.org/library/mysql:8.0.22
+    container_name: mysql_hive
+    environment:
+      MYSQL_ROOT_PASSWORD: abc123456
+    ports:
+      - "4306:3306"
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.5
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+networks:
+  hadoop:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
