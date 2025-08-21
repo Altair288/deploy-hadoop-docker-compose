@@ -1,0 +1,15 @@
+<configuration>
+    <property>
+        <name>system:java.io.tmpdir</name>
+        <value>/tmp/hive/java</value>
+    </property>
+    <property>
+        <name>system:user.name</name>
+        <value>${user.name}</value>
+    </property>
+    <!-- 只需配置 metastore 远程地址即可，无需数据库相关配置 -->
+    <property>
+        <name>hive.metastore.uris</name>
+        <value>thrift://172.19.0.4:9083</value>
+    </property>
+</configuration>

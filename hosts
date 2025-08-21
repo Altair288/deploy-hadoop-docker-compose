@@ -1,0 +1,7 @@
+127.0.0.1   localhost
+172.19.0.2   hadoop330
+172.19.0.3   master2
+172.19.0.4   worker1
+172.19.0.6   worker2
+172.19.0.7   worker3
+172.19.0.5   mysql_hive

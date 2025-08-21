@@ -1,0 +1,140 @@
+services:
+  master1:
+    image: hadoop:hl-zk-hb
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: hadoop330
+    ports:
+      - "2888:2888"
+      - "2181:2181"
+      - "3888:3888"
+      - "9100:9100"
+      - "9870:9870"
+      - "8088:8088"
+      - "8030:8030"
+      - "8031:8031"
+      - "8032:8032"
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+      - "10020:10020"
+      - "19888:19888"
+      - "16000:16000"
+      - "16010:16010"
+      - "16020:16020"
+      - "16030:16030"
+      - "6000:6000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.2
+    volumes:
+      - ./myid-master1:/usr/zookeeper/zkdata/myid
+
+  master2:
+    image: hadoop:hl-zk-hb
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: master2
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.3
+    volumes:
+      - ./myid-master2:/usr/zookeeper/zkdata/myid
+
+  worker1:
+    image: hadoop:hl-zk-hb
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker1
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.4
+    volumes:
+      - ./myid-worker1:/usr/zookeeper/zkdata/myid
+
+  worker2:
+    image: hadoop:hl-zk-hb
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker2
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.6
+    volumes:
+      - ./myid-worker2:/usr/zookeeper/zkdata/myid
+
+  worker3:
+    image: hadoop:hl-zk-hb
+    stdin_open: true
+    tty: true
+    command: bash
+    hostname: worker3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.7
+    volumes:
+      - ./myid-worker3:/usr/zookeeper/zkdata/myid
+
+  mysql_hive:
+    image: docker.altair288.eu.org/library/mysql:8.0.22
+    container_name: mysql_hive
+    environment:
+      MYSQL_ROOT_PASSWORD: abc123456
+    ports:
+      - "4306:3306"
+    networks:
+      hadoop:
+        ipv4_address: 172.19.0.5
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+networks:
+  hadoop:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
